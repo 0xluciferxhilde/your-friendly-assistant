@@ -14,6 +14,7 @@ import Terminal from "./pages/Terminal";
 import Ecosystem from "./pages/Ecosystem";
 import Parameters from "./pages/Parameters";
 import Deploy from "./pages/Deploy";
+import Forge from "./pages/Forge";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/ecosystem" element={<Ecosystem />} />
           <Route path="/parameters" element={<Parameters />} />
           <Route path="/deploy" element={<Deploy />} />
+          <Route path="/forge" element={<Forge />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
