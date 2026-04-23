@@ -4,6 +4,34 @@
 
 export type ForgeKind = "erc20" | "nft" | "staking" | "vesting" | "factory";
 
+// Sanitize a string into a valid Solidity identifier (used for contract names
+// derived from token symbols / user input).
+export function safeIdent(s: string, fallback: string): string {
+  const cleaned = (s || "").replace(/[^A-Za-z0-9_]/g, "");
+  if (!cleaned) return fallback;
+  return /^[0-9]/.test(cleaned) ? "_" + cleaned : cleaned;
+}
+
+// Returns the actual `contract X` name that the generator emits, so the
+// compiler / deployer can target it.
+export function getContractName(
+  kind: ForgeKind,
+  forms: { erc20: Erc20Form; nft: NftForm; staking: StakingForm; vesting: VestingForm; factory: FactoryForm }
+): string {
+  switch (kind) {
+    case "erc20":
+      return safeIdent(forms.erc20.symbol, "MTK");
+    case "nft":
+      return safeIdent(forms.nft.symbol, "MNFT");
+    case "staking":
+      return safeIdent(forms.staking.contractName, "TokenStaking");
+    case "vesting":
+      return safeIdent(forms.vesting.contractName, "TokenVesting");
+    case "factory":
+      return safeIdent(forms.factory.contractName, "LitVMTokenFactory");
+  }
+}
+
 export type Erc20Form = {
   name: string;
   symbol: string;
@@ -81,6 +109,7 @@ pragma solidity ^0.8.20;
 export function genErc20(f: Erc20Form): string {
   const name = f.name || "MyToken";
   const sym = f.symbol || "MTK";
+  const cname = safeIdent(sym, "MTK");
   const supply = f.supply || "1000000000";
   const dec = f.decimals || "18";
   const owner = f.owner || "msg.sender";
@@ -149,7 +178,7 @@ export function genErc20(f: Erc20Form): string {
 
   return `${HEADER(`${name} (${sym})`)}${imports.join("\n")}
 
-contract ${sym} is ${inh.join(", ")} {
+contract ${cname} is ${inh.join(", ")} {
     uint8 private _dec;
 ${taxState}
     constructor() ERC20("${name}", "${sym}")${f.ownable ? ` Ownable(${owner})` : ""} {
@@ -169,6 +198,7 @@ ${updateBody}
 export function genNft(f: NftForm): string {
   const name = f.name || "MyNFT";
   const sym = f.symbol || "MNFT";
+  const cname = safeIdent(sym, "MNFT");
   const maxS = f.maxSupply || "10000";
   const price = f.price || "0.05";
   const pw = f.perWallet || "5";
@@ -182,7 +212,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 ${f.royalty ? `import "@openzeppelin/contracts/interfaces/IERC2981.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 ` : ""}
-contract ${sym} is ERC721, Ownable${f.royalty ? ", IERC2981" : ""} {
+contract ${cname} is ERC721, Ownable${f.royalty ? ", IERC2981" : ""} {
     using Strings for uint256;
 
     uint256 public constant MAX_SUPPLY = ${maxS};
@@ -258,7 +288,7 @@ ${f.royalty ? `
 }
 
 export function genStaking(f: StakingForm): string {
-  const cname = f.contractName || "TokenStaking";
+  const cname = safeIdent(f.contractName, "TokenStaking");
   const stake = f.stakeToken || "0x0000000000000000000000000000000000000000";
   const reward = f.rewardToken.trim() || stake;
   const apr = Number(f.apr || "12");
@@ -367,7 +397,7 @@ ${f.pausable ? `    function pause() external onlyOwner { _pause(); }
 }
 
 export function genVesting(f: VestingForm): string {
-  const cname = f.contractName || "TokenVesting";
+  const cname = safeIdent(f.contractName, "TokenVesting");
   const token = f.token || "0x0000000000000000000000000000000000000000";
   const cliff = f.cliffDays || "90";
   const dur = f.durationDays || "365";
@@ -492,7 +522,7 @@ ${f.revocable ? `
 }
 
 export function genFactory(f: FactoryForm): string {
-  const cname = f.contractName || "LitVMTokenFactory";
+  const cname = safeIdent(f.contractName, "LitVMTokenFactory");
   const fee = f.fee || "0.05";
   const owner = f.owner || "msg.sender";
 

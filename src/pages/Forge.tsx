@@ -14,6 +14,10 @@ import {
   Lock,
   Hourglass,
   Factory,
+  Loader2,
+  X,
+  AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +26,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
+import { useAccount, useChainId, usePublicClient, useSwitchChain, useWalletClient } from "wagmi";
+import { EXPLORER_URL, LITVM_CHAIN_ID } from "@/lib/litvm";
+import { compileSolidity } from "@/lib/solcCompile";
 import {
   Erc20Form,
   FactoryForm,
@@ -34,7 +41,16 @@ import {
   genNft,
   genStaking,
   genVesting,
+  getContractName,
 } from "@/lib/forgeTemplates";
+
+type DeployStatus =
+  | { kind: "idle" }
+  | { kind: "compiling" }
+  | { kind: "deploying"; tx?: `0x${string}` }
+  | { kind: "ok"; tx: `0x${string}`; address: `0x${string}` }
+  | { kind: "error"; msg: string };
+
 
 const TABS: { value: ForgeKind; label: string; icon: typeof Coins; desc: string }[] = [
   { value: "erc20", label: "ERC20 Token", icon: Coins, desc: "Standard fungible token with optional mint, burn, pause, and transfer tax." },
@@ -174,18 +190,19 @@ export default function Forge() {
     factory: "",
   });
   const [copied, setCopied] = useState(false);
+  const [deploy, setDeploy] = useState<DeployStatus>({ kind: "idle" });
+  const [showDeploy, setShowDeploy] = useState(false);
+
+  const { isConnected } = useAccount();
+  const chainId = useChainId();
+  const { switchChainAsync } = useSwitchChain();
+  const { data: walletClient } = useWalletClient();
+  const publicClient = usePublicClient({ chainId: LITVM_CHAIN_ID });
 
   const code = generated[tab];
-  const fileName = useMemo(() => {
-    const map: Record<ForgeKind, string> = {
-      erc20: (erc20.symbol || "Token") + ".sol",
-      nft: (nft.symbol || "NFT") + ".sol",
-      staking: (staking.contractName || "Staking") + ".sol",
-      vesting: (vesting.contractName || "Vesting") + ".sol",
-      factory: (factory.contractName || "TokenFactory") + ".sol",
-    };
-    return map[tab];
-  }, [tab, erc20.symbol, nft.symbol, staking.contractName, vesting.contractName, factory.contractName]);
+  const forms = { erc20, nft, staking, vesting, factory };
+  const contractName = getContractName(tab, forms);
+  const fileName = useMemo(() => contractName + ".sol", [contractName]);
 
   const onGenerate = () => {
     let out = "";
@@ -195,7 +212,7 @@ export default function Forge() {
     else if (tab === "vesting") out = genVesting(vesting);
     else out = genFactory(factory);
     setGenerated((p) => ({ ...p, [tab]: out }));
-    toast({ title: "Contract generated", description: `${fileName} ready to copy or download.` });
+    toast({ title: "Contract generated", description: `${fileName} ready to copy, download, or deploy.` });
     requestAnimationFrame(() => {
       document.getElementById("forge-output")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     });
@@ -214,6 +231,50 @@ export default function Forge() {
     a.download = fileName;
     a.click();
     URL.revokeObjectURL(a.href);
+  };
+
+  const onDeploy = async () => {
+    if (!code) {
+      toast({ title: "Generate first", description: "Click Generate to build the contract before deploying." });
+      return;
+    }
+    if (!isConnected || !walletClient) {
+      toast({ title: "Connect wallet", description: "Connect your wallet to deploy on LitVM.", variant: "destructive" });
+      return;
+    }
+    setShowDeploy(true);
+    setDeploy({ kind: "compiling" });
+    try {
+      if (chainId !== LITVM_CHAIN_ID) {
+        try {
+          await switchChainAsync({ chainId: LITVM_CHAIN_ID });
+        } catch {
+          throw new Error("Please switch your wallet to LitVM (Chain 4441) and try again.");
+        }
+      }
+      const { abi, bytecode } = await compileSolidity({
+        source: code,
+        fileName,
+        contractName,
+      });
+      setDeploy({ kind: "deploying" });
+      const hash = await walletClient.deployContract({
+        abi: abi as never,
+        bytecode: bytecode as `0x${string}`,
+        args: [],
+        account: walletClient.account,
+        chain: walletClient.chain,
+      });
+      setDeploy({ kind: "deploying", tx: hash });
+      const receipt = await publicClient!.waitForTransactionReceipt({ hash });
+      const addr = receipt.contractAddress as `0x${string}` | undefined;
+      if (!addr) throw new Error("Deployment succeeded but no contract address returned.");
+      setDeploy({ kind: "ok", tx: hash, address: addr });
+      toast({ title: "Contract deployed 🚀", description: `Live at ${addr.slice(0, 10)}…${addr.slice(-6)}` });
+    } catch (e) {
+      const err = e as { shortMessage?: string; message?: string };
+      setDeploy({ kind: "error", msg: err?.shortMessage || err?.message || String(e) });
+    }
   };
 
   return (
@@ -305,7 +366,7 @@ export default function Forge() {
                 <span className="status-dot" /> LitVM 4441
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button variant="outline" size="sm" onClick={onCopy} className="gap-1.5">
                 {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                 {copied ? "Copied" : "Copy"}
@@ -313,10 +374,23 @@ export default function Forge() {
               <Button variant="outline" size="sm" onClick={onDownload} className="gap-1.5">
                 <Download className="h-3.5 w-3.5" /> Download
               </Button>
-              <Button asChild size="sm" className="gap-1.5 bg-gradient-violet shadow-glow-violet hover:opacity-90">
+              <Button asChild variant="outline" size="sm" className="gap-1.5">
                 <a href="https://remix.ethereum.org" target="_blank" rel="noreferrer">
-                  <ExternalLink className="h-3.5 w-3.5" /> Open in Remix
+                  <ExternalLink className="h-3.5 w-3.5" /> Remix
                 </a>
+              </Button>
+              <Button
+                size="sm"
+                onClick={onDeploy}
+                disabled={deploy.kind === "compiling" || deploy.kind === "deploying"}
+                className="gap-1.5 bg-gradient-violet shadow-glow-violet hover:opacity-90"
+              >
+                {deploy.kind === "compiling" || deploy.kind === "deploying" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Rocket className="h-3.5 w-3.5" />
+                )}
+                Deploy on LitVM
               </Button>
             </div>
           </div>
@@ -333,9 +407,135 @@ export default function Forge() {
           </div>
         </Card>
       )}
+
+      <DeployModal
+        open={showDeploy}
+        status={deploy}
+        contractName={contractName}
+        onClose={() => setShowDeploy(false)}
+      />
     </div>
   );
 }
+
+/* ───────────────────────── DEPLOY MODAL ───────────────────────── */
+
+function DeployModal({
+  open,
+  status,
+  contractName,
+  onClose,
+}: {
+  open: boolean;
+  status: DeployStatus;
+  contractName: string;
+  onClose: () => void;
+}) {
+  if (!open) return null;
+  const busy = status.kind === "compiling" || status.kind === "deploying";
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm">
+      <Card className="w-full max-w-md border-primary/30 bg-card/95 p-6 shadow-2xl">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl border border-primary/30 bg-primary/10 p-2.5">
+              {status.kind === "ok" ? (
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+              ) : status.kind === "error" ? (
+                <AlertCircle className="h-5 w-5 text-destructive" />
+              ) : (
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              )}
+            </div>
+            <div>
+              <h3 className="font-display text-base font-semibold">
+                {status.kind === "compiling" && "Compiling contract…"}
+                {status.kind === "deploying" && "Deploying to LitVM…"}
+                {status.kind === "ok" && "Contract deployed 🚀"}
+                {status.kind === "error" && "Deployment failed"}
+                {status.kind === "idle" && "Deploy contract"}
+              </h3>
+              <p className="font-mono text-[11px] text-muted-foreground">// {contractName}.sol</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            disabled={busy}
+            className="rounded-lg p-1 text-muted-foreground transition hover:bg-card hover:text-foreground disabled:opacity-40"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {status.kind === "compiling" && (
+          <p className="text-xs text-muted-foreground">
+            Resolving OpenZeppelin imports and compiling Solidity in your browser. First compile downloads ~5 MB of solc — may take 10-20 seconds.
+          </p>
+        )}
+
+        {status.kind === "deploying" && (
+          <div className="space-y-2 text-xs text-muted-foreground">
+            <p>Sending deployment transaction. Confirm in your wallet, then wait for block confirmation…</p>
+            {status.tx && (
+              <a
+                href={`${EXPLORER_URL}/tx/${status.tx}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 font-mono text-primary hover:underline"
+              >
+                <ExternalLink className="h-3 w-3" />
+                {status.tx.slice(0, 10)}…{status.tx.slice(-8)}
+              </a>
+            )}
+          </div>
+        )}
+
+        {status.kind === "ok" && (
+          <div className="space-y-3">
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
+              <Label className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Contract address</Label>
+              <div className="mt-1 flex items-center gap-2">
+                <code className="flex-1 break-all font-mono text-xs text-primary">{status.address}</code>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigator.clipboard.writeText(status.address)}
+                  className="h-7 gap-1 px-2 text-[10px]"
+                >
+                  <Copy className="h-3 w-3" /> Copy
+                </Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button asChild variant="outline" size="sm" className="gap-1.5">
+                <a href={`${EXPLORER_URL}/address/${status.address}`} target="_blank" rel="noreferrer">
+                  <ExternalLink className="h-3 w-3" /> Contract
+                </a>
+              </Button>
+              <Button asChild size="sm" className="gap-1.5 bg-gradient-violet shadow-glow-violet hover:opacity-90">
+                <a href={`${EXPLORER_URL}/tx/${status.tx}`} target="_blank" rel="noreferrer">
+                  <ExternalLink className="h-3 w-3" /> Transaction
+                </a>
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {status.kind === "error" && (
+          <div className="space-y-3">
+            <pre className="max-h-60 overflow-auto rounded-xl border border-destructive/30 bg-destructive/5 p-3 font-mono text-[11px] text-destructive">
+              {status.msg}
+            </pre>
+            <Button onClick={onClose} variant="outline" size="sm" className="w-full">
+              Close
+            </Button>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
 
 /* ───────────────────────── PANELS ───────────────────────── */
 
