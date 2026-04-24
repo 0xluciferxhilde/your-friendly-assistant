@@ -927,6 +927,16 @@ export default function Forge() {
         contractName={contractName}
         onClose={() => setShowDeploy(false)}
       />
+
+      <TxResultModal
+        open={resultModal.open}
+        onClose={() => setResultModal((s) => ({ ...s, open: false }))}
+        kind={resultModal.kind}
+        title={resultModal.title}
+        subtitle={resultModal.subtitle}
+        txHash={resultModal.txHash}
+        details={resultModal.details}
+      />
     </div>
   );
 }
