@@ -1,12 +1,12 @@
-import { ExternalLink, Compass } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { DAPPS } from "@/lib/litvm";
 
 export default function Ecosystem() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="flex items-center gap-3 font-display text-4xl">
-          <Compass className="h-7 w-7 text-primary" /> LitVM Ecosystem
+        <h1 className="font-display text-4xl">
+          <span className="text-gradient-aurora">LitVM Ecosystem</span>
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">All projects building on the LiteForge testnet.</p>
       </div>
