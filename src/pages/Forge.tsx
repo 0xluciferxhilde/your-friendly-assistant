@@ -114,7 +114,7 @@ function TextInput({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         maxLength={maxLength}
-        className={`h-11 w-full rounded-xl border border-white/[0.07] bg-white/[0.03] px-3.5 text-sm text-white placeholder:text-white/20 focus:border-blue-500/60 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${mono ? "font-mono" : ""}`}
+        className={`h-11 w-full rounded-xl border border-white/[0.07] bg-white/[0.03] px-3.5 text-sm text-white placeholder:text-white/20 focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20 ${mono ? "font-mono" : ""}`}
       />
       {hint && <div className="mt-1 text-[11px] text-white/30">{hint}</div>}
     </>
@@ -136,7 +136,7 @@ function NumberInput({
         min={min}
         max={max}
         step={step}
-        className="h-11 w-full rounded-xl border border-white/[0.07] bg-white/[0.03] px-3.5 font-mono text-sm text-white placeholder:text-white/20 focus:border-blue-500/60 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+        className="h-11 w-full rounded-xl border border-white/[0.07] bg-white/[0.03] px-3.5 font-mono text-sm text-white placeholder:text-white/20 focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20"
       />
       {hint && <div className="mt-1 text-[11px] text-white/30">{hint}</div>}
     </>
@@ -152,8 +152,8 @@ function Toggle({
     <label
       className={`flex cursor-pointer items-center justify-between rounded-xl border p-4 transition-all ${
         checked
-          ? "border-blue-500/40 bg-blue-500/10"
-          : "border-white/[0.07] bg-white/[0.02] hover:border-blue-500/20"
+          ? "border-primary/40 bg-primary/10"
+          : "border-white/[0.07] bg-white/[0.02] hover:border-primary/20"
       }`}
     >
       <div>
@@ -164,7 +164,7 @@ function Toggle({
         type="button"
         onClick={() => onChange(!checked)}
         className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
-          checked ? "bg-blue-600" : "bg-white/10 border border-white/10"
+          checked ? "bg-primary" : "bg-white/10 border border-white/10"
         }`}
       >
         <span
@@ -397,11 +397,11 @@ function DeployModal({
 
         <div className="flex justify-center">
           {status.kind === "ok" ? (
-            <CheckCircle2 className="h-12 w-12 text-blue-400" />
+            <CheckCircle2 className="h-12 w-12 text-primary" />
           ) : status.kind === "error" ? (
             <AlertCircle className="h-12 w-12 text-red-400" />
           ) : (
-            <Loader2 className="h-12 w-12 animate-spin text-blue-400" />
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
           )}
         </div>
 
@@ -424,7 +424,7 @@ function DeployModal({
             href={`${EXPLORER_URL}/tx/${status.tx}`}
             target="_blank"
             rel="noreferrer"
-            className="mt-3 inline-flex items-center gap-1.5 text-sm text-blue-400 hover:underline"
+            className="mt-3 inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
           >
             View tx <ExternalLink className="h-3.5 w-3.5" />
           </a>
@@ -432,10 +432,10 @@ function DeployModal({
 
         {status.kind === "ok" && (
           <div className="mt-4 space-y-3">
-            <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-3 text-left">
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-left">
               <div className="text-[10px] uppercase tracking-wider text-white/30">Contract Address</div>
               <div className="mt-1 flex items-center gap-2">
-                <code className="flex-1 break-all font-mono text-xs text-blue-400">{status.address}</code>
+                <code className="flex-1 break-all font-mono text-xs text-primary">{status.address}</code>
                 <button
                   onClick={() => navigator.clipboard.writeText(status.address)}
                   className="shrink-0 text-white/30 hover:text-white"
@@ -457,7 +457,7 @@ function DeployModal({
                 href={`${EXPLORER_URL}/tx/${status.tx}`}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-blue-500/60 bg-blue-600/20 px-3 py-2 text-xs font-semibold text-blue-400 hover:bg-blue-600/30"
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-primary/60 bg-primary/20 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/30"
               >
                 <ExternalLink className="h-3 w-3" /> Transaction
               </a>
@@ -675,11 +675,11 @@ export default function Forge() {
       {/* ── Header ── */}
       <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/5 px-4 py-1.5 text-xs uppercase tracking-[0.25em] text-blue-400">
+          <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/5 px-4 py-1.5 text-xs uppercase tracking-[0.25em] text-teal-400">
             <Hammer className="h-3 w-3" /> Contract Forge · 1-Click Deploy
           </div>
           <h1 className="mt-3 font-display text-5xl text-white">
-            Create & <span className="text-blue-400">Deploy</span>
+            Create & <span className="text-teal-400">Deploy</span>
           </h1>
           <p className="mt-1 text-sm text-white/40">
             Fill the form → deploy in one transaction · {feeEther} {LITVM_FACTORY_NATIVE_SYMBOL} fee · LitVM testnet
@@ -699,7 +699,7 @@ export default function Forge() {
           </div>
           <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-2.5 text-xs">
             <div className="text-[10px] uppercase tracking-wider text-white/30">Deploy Fee</div>
-            <div className="mt-0.5 font-display text-lg text-blue-400">{feeEther} {LITVM_FACTORY_NATIVE_SYMBOL}</div>
+            <div className="mt-0.5 font-display text-lg text-teal-400">{feeEther} {LITVM_FACTORY_NATIVE_SYMBOL}</div>
           </div>
         </div>
       </header>
@@ -712,8 +712,8 @@ export default function Forge() {
             onClick={() => setTab(t.value)}
             className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all ${
               tab === t.value
-                ? "border-blue-500/60 bg-blue-600/20 text-blue-400"
-                : "border-white/[0.07] bg-white/[0.03] text-white/40 hover:border-blue-500/20 hover:text-white/70"
+                ? "border-teal-500/60 bg-teal-600/20 text-teal-400"
+                : "border-white/[0.07] bg-white/[0.03] text-white/40 hover:border-primary/20 hover:text-white/70"
             }`}
           >
             <t.icon className="h-4 w-4" />
@@ -727,8 +727,8 @@ export default function Forge() {
 
         {/* Tab header */}
         <div className="mb-6 flex items-start gap-3">
-          <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-2.5">
-            <activeTab.icon className="h-5 w-5 text-blue-400" />
+          <div className="rounded-xl border border-teal-500/20 bg-teal-500/5 p-2.5">
+            <activeTab.icon className="h-5 w-5 text-teal-400" />
           </div>
           <div>
             <h2 className="font-display text-2xl text-white">{activeTab.label}</h2>
@@ -755,7 +755,7 @@ export default function Forge() {
         <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <button
             onClick={onGenerate}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 text-sm font-medium text-white/70 transition-colors hover:border-blue-500/30 hover:text-white"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 text-sm font-medium text-white/70 transition-colors hover:border-primary/30 hover:text-white"
           >
             <Zap className="h-4 w-4" /> Preview Source
           </button>
@@ -765,7 +765,7 @@ export default function Forge() {
             className={`inline-flex h-12 items-center justify-center gap-2 rounded-xl border text-base font-semibold tracking-wide transition-colors disabled:opacity-60 ${
               isFactoryTab
                 ? "border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
-                : "border-blue-500/60 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30"
+                : "border-teal-500/60 bg-teal-600/20 text-teal-400 hover:bg-primary/30"
             }`}
           >
             {deploy.kind === "deploying" && !isFactoryTab ? (
@@ -785,9 +785,9 @@ export default function Forge() {
         <div id="forge-output" className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0d1117]">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.07] bg-white/[0.02] px-5 py-3">
             <div className="flex items-center gap-3">
-              <span className="font-mono text-sm text-blue-400">{fileName}</span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-2.5 py-0.5 font-mono text-[10px] text-blue-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" /> Source preview
+              <span className="font-mono text-sm text-primary">{fileName}</span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 font-mono text-[10px] text-primary">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" /> Source preview
               </span>
             </div>
             <div className="flex gap-2">
@@ -795,7 +795,7 @@ export default function Forge() {
                 onClick={onCopy}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/60 hover:border-white/20 hover:text-white"
               >
-                {copied ? <Check className="h-3.5 w-3.5 text-blue-400" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
                 {copied ? "Copied" : "Copy"}
               </button>
               <button
@@ -810,7 +810,7 @@ export default function Forge() {
             <code>{code}</code>
           </pre>
           <div className="flex items-start gap-2 border-t border-white/[0.07] bg-white/[0.02] px-5 py-3 text-[11px] text-white/30">
-            <ShieldCheck className="mt-0.5 h-3.5 w-3.5 text-blue-400" />
+            <ShieldCheck className="mt-0.5 h-3.5 w-3.5 text-primary" />
             <p>
               {isFactoryTab
                 ? "Factory source template — deploy this contract manually via Remix, Hardhat, or Foundry."
@@ -826,7 +826,7 @@ export default function Forge() {
       <div className="rounded-2xl border border-white/[0.07] bg-[#0d1117] p-5 md:p-6">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Wallet className="h-4 w-4 text-blue-400" />
+            <Wallet className="h-4 w-4 text-primary" />
             <h3 className="font-display text-lg text-white">My Deployed Contracts</h3>
           </div>
           <button
@@ -849,11 +849,11 @@ export default function Forge() {
             {myContracts.map((c) => (
               <div
                 key={c.address}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5 transition-all hover:border-blue-500/30"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5 transition-all hover:border-primary/30"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-blue-400">
+                    <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-primary">
                       {FACTORY_TYPE_LABEL[c.type] ?? "?"}
                     </span>
                     <span className="truncate text-sm font-medium text-white">{c.label || "—"}</span>
@@ -862,7 +862,7 @@ export default function Forge() {
                     href={`${EXPLORER_URL}/address/${c.address}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="font-mono text-[11px] text-white/30 hover:text-blue-400"
+                    className="font-mono text-[11px] text-white/30 hover:text-primary"
                   >
                     {c.address}
                   </a>
