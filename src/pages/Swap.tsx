@@ -12,11 +12,18 @@ import {
   ROUTERS,
   RPC_URL,
   SWAP_TOKENS,
+  WZKLTC_ADDR,
   errMsg,
   isNativeAddr,
   pickRouter,
   shortAddr,
 } from "@/lib/litvm";
+
+// Some routers expose WZKLTC(), others WETH(). Try both, fallback to constant.
+const ROUTER_WRAPPED_ABI = [
+  "function WZKLTC() view returns (address)",
+  "function WETH() view returns (address)",
+] as const;
 
 type TokenMeta = { address: string; symbol: string; decimals: number; balance: string };
 type Status = { kind: "idle" | "info" | "ok" | "error"; msg: string; txHash?: string };
