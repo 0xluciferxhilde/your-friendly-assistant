@@ -2,6 +2,13 @@ import type { Config } from "tailwindcss";
 
 export default {
   darkMode: ["class"],
+  safelist: [
+    'bg-teal-500/30', 'bg-teal-500/10', 'bg-teal-500/5', 'bg-teal-600/20', 'bg-teal-600/30',
+    'border-teal-500/60', 'border-teal-500/40', 'border-teal-500/20',
+    'text-teal-400', 'text-[#2dd4bf]',
+    'shadow-teal-500/50', 'ring-teal-500/20',
+    'from-teal-400', 'to-teal-600',
+  ],
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   prefix: "",
   theme: {
