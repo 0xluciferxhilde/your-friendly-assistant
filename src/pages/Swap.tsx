@@ -256,17 +256,16 @@ export default function Swap() {
   const [tokenBalances, setTokenBalances] = useState<Record<string, string>>({});
   const quoteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load WZKLTC from router
+  // Load wrapped native address from router (try WZKLTC then WETH, fallback to constant)
   useEffect(() => {
     let cancel = false;
     (async () => {
-      try {
-        const r = new Contract(routerAddr, ROUTER_ABI, readProvider);
-        const w = String(await r.WZKLTC());
-        if (!cancel) setWethAddr(w);
-      } catch {
-        if (!cancel) setWethAddr("");
-      }
+      const r = new Contract(routerAddr, ROUTER_WRAPPED_ABI, readProvider);
+      let w = "";
+      try { w = String(await r.WZKLTC()); } catch { /* try WETH */ }
+      if (!w) { try { w = String(await r.WETH()); } catch { /* fallback */ } }
+      if (!w) w = WZKLTC_ADDR;
+      if (!cancel) setWethAddr(w);
     })();
     return () => { cancel = true; };
   }, [routerAddr]);
