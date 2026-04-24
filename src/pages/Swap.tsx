@@ -612,9 +612,9 @@ export default function Swap() {
             {/* Icon buttons */}
             <div className="relative flex items-center gap-2">
               <button
-                onClick={() => fetchQuote()}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/50 transition-colors hover:border-white/20 hover:text-white"
-                title="Refresh quote"
+                onClick={onFlip}
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/50 transition-all hover:border-primary/40 hover:text-primary hover:rotate-180"
+                title="Flip tokens (swap input ⇄ output)"
               >
                 <RefreshCw className={`h-4 w-4 ${quoteLoading ? "animate-spin" : ""}`} />
               </button>
