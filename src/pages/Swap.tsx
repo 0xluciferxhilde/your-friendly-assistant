@@ -246,13 +246,13 @@ export default function Swap() {
   const [tokenBalances, setTokenBalances] = useState<Record<string, string>>({});
   const quoteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load WETH from router
+  // Load WZKLTC from router
   useEffect(() => {
     let cancel = false;
     (async () => {
       try {
         const r = new Contract(routerAddr, ROUTER_ABI, readProvider);
-        const w = String(await r.WETH());
+        const w = String(await r.WZKLTC());
         if (!cancel) setWethAddr(w);
       } catch {
         if (!cancel) setWethAddr("");
@@ -409,13 +409,13 @@ export default function Swap() {
       const inWei = parseUnits(amountIn, tokenIn.decimals);
       const outWei = parseUnits(amountOut, tokenOut.decimals);
       const minOut = outWei - (outWei * BigInt(Math.floor(slippage * 100))) / 10000n;
-      const deadline = Math.floor(Date.now() / 1000) + 600;
+      const deadline = Math.floor(Date.now() / 1000) + 1200;
 
       let tx;
       if (isNativeAddr(tokenInAddr)) {
-        tx = await router.swapExactETHForTokens(minOut, path, walletAddr, deadline, { value: inWei });
+        tx = await router.swapExactZKLTCForTokens(minOut, path, walletAddr, deadline, { value: inWei });
       } else if (isNativeAddr(tokenOutAddr)) {
-        tx = await router.swapExactTokensForETH(inWei, minOut, path, walletAddr, deadline);
+        tx = await router.swapExactTokensForZKLTC(inWei, minOut, path, walletAddr, deadline);
       } else {
         tx = await router.swapExactTokensForTokens(inWei, minOut, path, walletAddr, deadline);
       }
@@ -677,7 +677,7 @@ export default function Swap() {
           <a href={`${EXPLORER_URL}/address/${routerAddr}`} target="_blank" rel="noreferrer" className="text-primary hover:underline">
             {shortAddr(routerAddr)}
           </a>{" "}
-          · OmniFun V2 Router
+          · LiteSwap V2 Router
         </div>
       </div>
 
