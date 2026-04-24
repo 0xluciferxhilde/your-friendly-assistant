@@ -22,6 +22,9 @@ import {
   shortAddr,
 } from "@/lib/litvm";
 import { resolveLogo, resolveSymbol } from "@/lib/tokenMeta";
+import { TiltCard } from "@/components/TiltCard";
+import { TxResultModal, type TxResultKind, type TxResultDetail } from "@/components/TxResultModal";
+import { pushWalletTx } from "@/hooks/useWalletHistory";
 
 type TokenMeta = { address: string; symbol: string; decimals: number; balance: string };
 type Status = { kind: "idle" | "info" | "ok" | "error"; msg: string; txHash?: string };
@@ -95,7 +98,8 @@ function TokenPickerModal({
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-background/70 p-4 pt-[10vh] backdrop-blur-md animate-fade-in" onClick={onClose}>
-      <div className="w-full max-w-md panel-elevated p-5 animate-scale-in" onClick={(e) => e.stopPropagation()}>
+      <TiltCard tiltLimit={5} scale={1.01} className="w-full max-w-md animate-scale-in">
+      <div className="w-full panel-elevated p-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h3 className="font-display text-xl text-gradient-aurora">Select a Token</h3>
           <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-surface hover:text-foreground">
@@ -136,6 +140,7 @@ function TokenPickerModal({
           ))}
         </div>
       </div>
+      </TiltCard>
     </div>
   );
 }
@@ -168,6 +173,11 @@ export default function Pool() {
   // approvals
   const [allowanceA, setAllowanceA] = useState<bigint>(0n);
   const [allowanceB, setAllowanceB] = useState<bigint>(0n);
+
+  // Final result modal (themed pop-up)
+  const [resultModal, setResultModal] = useState<{
+    open: boolean; kind: TxResultKind; title: string; subtitle?: string; txHash?: string; details?: TxResultDetail[];
+  }>({ open: false, kind: "ok", title: "" });
 
   const ensureChain = useCallback(async () => {
     if (chainId !== LITVM_CHAIN_ID) await switchChainAsync({ chainId: LITVM_CHAIN_ID });
@@ -303,13 +313,34 @@ export default function Pool() {
       setStatus({ kind: "info", msg: "Confirming…", txHash: tx.hash });
       const receipt = await tx.wait();
       const finalHash = receipt?.hash ?? tx.hash;
-      setStatus({ kind: "ok", msg: `Liquidity added! tx ${shortAddr(finalHash)}`, txHash: finalHash });
+      setStatus({ kind: "idle", msg: "" });
+      setResultModal({
+        open: true,
+        kind: "ok",
+        title: "Liquidity Added",
+        subtitle: "Your liquidity position is live on LitDeX.",
+        txHash: finalHash,
+        details: [
+          { label: tokenA?.symbol || "Token A", value: `${(+amountA).toLocaleString(undefined, { maximumFractionDigits: 6 })} ${tokenA?.symbol || ""}` },
+          { label: tokenB?.symbol || "Token B", value: `${(+amountB).toLocaleString(undefined, { maximumFractionDigits: 6 })} ${tokenB?.symbol || ""}` },
+          { label: "Router", value: "LitDeX Router" },
+        ],
+      });
+      pushWalletTx({
+        hash: finalHash,
+        kind: "liquidity",
+        title: `Add ${tokenA?.symbol || "?"} + ${tokenB?.symbol || "?"}`,
+        subtitle: `${(+amountA).toFixed(4)} ${tokenA?.symbol || ""} & ${(+amountB).toFixed(4)} ${tokenB?.symbol || ""}`,
+        time: Date.now(),
+        account: walletAddr,
+      });
       setAmountA(""); setAmountB("");
       reloadPair();
       const [m1, m2] = await Promise.all([loadTokenMeta(tokenAAddr, walletAddr), loadTokenMeta(tokenBAddr, walletAddr)]);
       setTokenA(m1); setTokenB(m2);
     } catch (e) {
-      setStatus({ kind: "error", msg: "Add failed: " + errMsg(e).slice(0, 160) });
+      setStatus({ kind: "idle", msg: "" });
+      setResultModal({ open: true, kind: "error", title: "Add Liquidity Failed", subtitle: errMsg(e).slice(0, 200) });
     } finally { setBusy(false); }
   };
 
@@ -355,13 +386,34 @@ export default function Pool() {
       setStatus({ kind: "info", msg: "Confirming…", txHash: tx.hash });
       const receipt = await tx.wait();
       const finalHash = receipt?.hash ?? tx.hash;
-      setStatus({ kind: "ok", msg: `Removed! tx ${shortAddr(finalHash)}`, txHash: finalHash });
+      setStatus({ kind: "idle", msg: "" });
+      setResultModal({
+        open: true,
+        kind: "ok",
+        title: "Liquidity Removed",
+        subtitle: "Your LP tokens have been burned.",
+        txHash: finalHash,
+        details: [
+          { label: "LP burned", value: `${(+removeAmount).toLocaleString(undefined, { maximumFractionDigits: 6 })} LP` },
+          { label: "Pair", value: `${tokenA?.symbol || "?"} / ${tokenB?.symbol || "?"}` },
+          { label: "Router", value: "LitDeX Router" },
+        ],
+      });
+      pushWalletTx({
+        hash: finalHash,
+        kind: "liquidity",
+        title: `Remove ${tokenA?.symbol || "?"}/${tokenB?.symbol || "?"} LP`,
+        subtitle: `${(+removeAmount).toFixed(4)} LP burned`,
+        time: Date.now(),
+        account: walletAddr,
+      });
       setRemoveAmount("");
       reloadPair();
       const [m1, m2] = await Promise.all([loadTokenMeta(tokenAAddr, walletAddr), loadTokenMeta(tokenBAddr, walletAddr)]);
       setTokenA(m1); setTokenB(m2);
     } catch (e) {
-      setStatus({ kind: "error", msg: "Remove failed: " + errMsg(e).slice(0, 160) });
+      setStatus({ kind: "idle", msg: "" });
+      setResultModal({ open: true, kind: "error", title: "Remove Liquidity Failed", subtitle: errMsg(e).slice(0, 200) });
     } finally { setBusy(false); }
   };
 
@@ -397,6 +449,7 @@ export default function Pool() {
       </div>
 
       <div className="mx-auto max-w-lg">
+        <TiltCard tiltLimit={6} scale={1.015} className="rounded-2xl">
         <div className="panel-elevated p-5">
           {/* Tabs */}
           <div className="flex gap-1 rounded-xl border border-border bg-background/40 p-1">
@@ -587,6 +640,7 @@ export default function Pool() {
             )}
           </div>
         </div>
+        </TiltCard>
 
         <div className="mt-3 text-center text-[11px] text-muted-foreground num">
           Routed via <span className="font-semibold text-primary">LitDeX Router</span>
@@ -603,6 +657,16 @@ export default function Pool() {
           else if (pickerSide === "b") setTokenBAddr(addr);
           setPickerSide(null);
         }}
+      />
+
+      <TxResultModal
+        open={resultModal.open}
+        onClose={() => setResultModal((s) => ({ ...s, open: false }))}
+        kind={resultModal.kind}
+        title={resultModal.title}
+        subtitle={resultModal.subtitle}
+        txHash={resultModal.txHash}
+        details={resultModal.details}
       />
     </div>
   );

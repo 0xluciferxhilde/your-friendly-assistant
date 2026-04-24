@@ -3,6 +3,8 @@ import { Zap, Send } from "lucide-react";
 import { useAccount, useBalance } from "wagmi";
 import { Contract, JsonRpcProvider, formatEther, parseEther, BrowserProvider } from "ethers";
 import { DAPPS, EXPLORER_URL, LITVM_CHAIN_ID, RPC_URL, WZKLTC_ABI, WZKLTC_ADDR, errMsg, shortAddr } from "@/lib/litvm";
+import { TiltCard } from "@/components/TiltCard";
+import { pushWalletTx } from "@/hooks/useWalletHistory";
 
 type Msg =
   | { who: "bot"; html: string; ts: string }
@@ -112,6 +114,14 @@ export default function Terminal() {
           bot(`⏳ ${isWrap ? "Wrapping" : "Unwrapping"}… <a class="text-primary underline" href="${EXPLORER_URL}/tx/${tx.hash}" target="_blank">View TX</a>`);
           await tx.wait();
           bot(`✅ ${isWrap ? "Wrapped" : "Unwrapped"} ${arg} ${isWrap ? "zkLTC → WZKLTC" : "WZKLTC → zkLTC"} 🔥`);
+          pushWalletTx({
+            hash: tx.hash,
+            kind: "wrap",
+            title: isWrap ? `Wrap ${arg} zkLTC → WZKLTC` : `Unwrap ${arg} WZKLTC → zkLTC`,
+            subtitle: "via LitVM Terminal",
+            time: Date.now(),
+            account: address,
+          });
         } catch (e) { bot(`<span class="text-destructive">${errMsg(e)}</span>`); }
         return;
       }
@@ -126,6 +136,7 @@ export default function Terminal() {
         <span className="text-gradient-aurora">LitVM Terminal</span>
       </h1>
 
+      <TiltCard tiltLimit={4} scale={1.005} className="rounded-2xl">
       <div className="panel flex h-[70vh] flex-col">
         <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-4">
           {messages.map((m, i) => m.who === "bot" ? (
@@ -160,6 +171,7 @@ export default function Terminal() {
           </button>
         </form>
       </div>
+      </TiltCard>
     </div>
   );
 }

@@ -21,6 +21,7 @@ import {
 import { resolveLogo, resolveSymbol } from "@/lib/tokenMeta";
 import { TiltCard } from "@/components/TiltCard";
 import { TxResultModal, type TxResultKind, type TxResultDetail } from "@/components/TxResultModal";
+import { pushWalletTx } from "@/hooks/useWalletHistory";
 
 // Some routers expose WZKLTC(), others WETH(). Try both, fallback to constant.
 const ROUTER_WRAPPED_ABI = [
@@ -482,6 +483,14 @@ export default function Swap() {
           { label: "Router", value: routerKey === "omnifun" ? "OmniFun Router" : "LitDeX Router" },
         ],
       });
+      pushWalletTx({
+        hash: finalHash,
+        kind: "swap",
+        title: `Swapped ${tokenIn.symbol} → ${tokenOut.symbol}`,
+        subtitle: `${(+amountIn).toFixed(4)} ${tokenIn.symbol} → ${(+amountOut).toFixed(4)} ${tokenOut.symbol} · ${routerKey === "omnifun" ? "OmniFun" : "LitDeX"} Router`,
+        time: Date.now(),
+        account: walletAddr,
+      });
       setAmountIn(""); setAmountOut("");
       const [m1, m2] = await Promise.all([
         loadTokenMeta(tokenInAddr, walletAddr),
@@ -603,9 +612,9 @@ export default function Swap() {
             {/* Icon buttons */}
             <div className="relative flex items-center gap-2">
               <button
-                onClick={() => fetchQuote()}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/50 transition-colors hover:border-white/20 hover:text-white"
-                title="Refresh quote"
+                onClick={onFlip}
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/50 transition-all hover:border-primary/40 hover:text-primary hover:rotate-180"
+                title="Flip tokens (swap input ⇄ output)"
               >
                 <RefreshCw className={`h-4 w-4 ${quoteLoading ? "animate-spin" : ""}`} />
               </button>

@@ -30,6 +30,9 @@ import {
 import { errMsg, shortAddr, EXPLORER_URL } from "@/lib/litvm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
+import { TiltCard } from "@/components/TiltCard";
+import { TxResultModal, type TxResultKind, type TxResultDetail } from "@/components/TxResultModal";
+import { pushWalletTx } from "@/hooks/useWalletHistory";
 
 type Status =
   | { kind: "idle" }
@@ -234,6 +237,9 @@ export default function Deploy() {
   const [myTokens, setMyTokens] = useState<TokenInfo[]>([]);
   const [allTokens, setAllTokens] = useState<TokenInfo[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [resultModal, setResultModal] = useState<{
+    open: boolean; kind: TxResultKind; title: string; subtitle?: string; txHash?: string; details?: TxResultDetail[];
+  }>({ open: false, kind: "ok", title: "" });
 
   const onLitVM = chainId === TOKEN_FACTORY_CHAIN_ID;
 
@@ -376,12 +382,36 @@ export default function Deploy() {
         tx: tx.hash,
         tokenAddr,
       });
+      setShowModal(false);
+      setResultModal({
+        open: true,
+        kind: "ok",
+        title: "Token Deployed",
+        subtitle: `${form.symbol} is live on LitVM testnet.`,
+        txHash: tx.hash,
+        details: [
+          { label: "Name", value: form.name },
+          { label: "Symbol", value: form.symbol },
+          { label: "Supply", value: Number(form.totalSupply).toLocaleString() },
+          ...(tokenAddr ? [{ label: "Contract", value: tokenAddr, addressLink: true } as TxResultDetail] : []),
+        ],
+      });
+      pushWalletTx({
+        hash: tx.hash,
+        kind: "deploy",
+        title: `Deployed ${form.symbol} (ERC-20)`,
+        subtitle: `${form.name} · ${Number(form.totalSupply).toLocaleString()} supply`,
+        time: Date.now(),
+        account: address,
+      });
       toast({ title: "Token deployed!", description: `${form.symbol} live on LitVM` });
       setForm(DEFAULT_FORM);
       setStep(1);
       setRefreshKey((k) => k + 1);
     } catch (e) {
       setStatus({ kind: "error", msg: errMsg(e) });
+      setShowModal(false);
+      setResultModal({ open: true, kind: "error", title: "Deploy Failed", subtitle: errMsg(e).slice(0, 200) });
     } finally {
       setBusy(false);
     }
@@ -492,6 +522,7 @@ export default function Deploy() {
 
           <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
             {/* Left: form */}
+            <TiltCard tiltLimit={5} scale={1.01} className="rounded-2xl">
             <div className="rounded-2xl border border-white/[0.07] bg-[#0d1117] p-6">
               {step === 1 && (
                 <div className="space-y-5">
@@ -702,6 +733,7 @@ export default function Deploy() {
                 </div>
               )}
             </div>
+            </TiltCard>
 
             {/* Right: live preview */}
             <LivePreview form={form} />
@@ -732,6 +764,16 @@ export default function Deploy() {
       </Tabs>
 
       <SubmitModal open={showModal} onClose={() => setShowModal(false)} status={status} />
+
+      <TxResultModal
+        open={resultModal.open}
+        onClose={() => setResultModal((s) => ({ ...s, open: false }))}
+        kind={resultModal.kind}
+        title={resultModal.title}
+        subtitle={resultModal.subtitle}
+        txHash={resultModal.txHash}
+        details={resultModal.details}
+      />
     </div>
   );
 }

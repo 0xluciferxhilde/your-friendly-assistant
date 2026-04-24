@@ -46,6 +46,9 @@ import {
   getContractName,
   type FactoryForm,
 } from "@/lib/forgeTemplates";
+import { TiltCard } from "@/components/TiltCard";
+import { TxResultModal, type TxResultKind, type TxResultDetail } from "@/components/TxResultModal";
+import { pushWalletTx } from "@/hooks/useWalletHistory";
 
 type DeployStatus =
   | { kind: "idle" }
@@ -497,6 +500,9 @@ export default function Forge() {
   const [deploy, setDeploy] = useState<DeployStatus>({ kind: "idle" });
   const [showDeploy, setShowDeploy] = useState(false);
   const [myContracts, setMyContracts] = useState<Array<{ address: `0x${string}`; type: number; label: string; deployedAt: number }>>([]);
+  const [resultModal, setResultModal] = useState<{
+    open: boolean; kind: TxResultKind; title: string; subtitle?: string; txHash?: string; details?: TxResultDetail[];
+  }>({ open: false, kind: "ok", title: "" });
 
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
@@ -658,11 +664,35 @@ export default function Forge() {
       }
       if (!deployedAddr) throw new Error("Deployment confirmed but contract address not found in logs.");
       setDeploy({ kind: "ok", tx: hash, address: deployedAddr });
+      setShowDeploy(false);
+      setResultModal({
+        open: true,
+        kind: "ok",
+        title: "Contract Deployed",
+        subtitle: `Your ${activeTab.label} is live on LitVM.`,
+        txHash: hash,
+        details: [
+          { label: "Type", value: activeTab.label },
+          { label: "Name", value: contractName },
+          { label: "Contract", value: deployedAddr, addressLink: true },
+        ],
+      });
+      pushWalletTx({
+        hash,
+        kind: "deploy",
+        title: `Deployed ${activeTab.label}`,
+        subtitle: `${contractName} · ${shortAddr(deployedAddr)}`,
+        time: Date.now(),
+        account: address,
+      });
       toast({ title: "Contract deployed 🚀", description: `Live at ${shortAddr(deployedAddr)}` });
       loadMine();
     } catch (e) {
       const err = e as { shortMessage?: string; message?: string };
-      setDeploy({ kind: "error", msg: err?.shortMessage || err?.message || String(e) });
+      const msg = err?.shortMessage || err?.message || String(e);
+      setDeploy({ kind: "error", msg });
+      setShowDeploy(false);
+      setResultModal({ open: true, kind: "error", title: "Deploy Failed", subtitle: msg.slice(0, 200) });
     }
   };
 
@@ -723,6 +753,7 @@ export default function Forge() {
       </div>
 
       {/* ── Main form card ── */}
+      <TiltCard tiltLimit={5} scale={1.01} className="rounded-2xl">
       <div className="rounded-2xl border border-white/[0.07] bg-[#0d1117] p-6 md:p-8">
 
         {/* Tab header */}
@@ -779,6 +810,7 @@ export default function Forge() {
           </button>
         </div>
       </div>
+      </TiltCard>
 
       {/* ── Source preview ── */}
       {code && (
@@ -894,6 +926,16 @@ export default function Forge() {
         status={deploy}
         contractName={contractName}
         onClose={() => setShowDeploy(false)}
+      />
+
+      <TxResultModal
+        open={resultModal.open}
+        onClose={() => setResultModal((s) => ({ ...s, open: false }))}
+        kind={resultModal.kind}
+        title={resultModal.title}
+        subtitle={resultModal.subtitle}
+        txHash={resultModal.txHash}
+        details={resultModal.details}
       />
     </div>
   );
