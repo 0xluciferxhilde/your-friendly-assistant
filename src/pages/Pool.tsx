@@ -449,6 +449,7 @@ export default function Pool() {
       </div>
 
       <div className="mx-auto max-w-lg">
+        <TiltCard tiltLimit={6} scale={1.015} className="rounded-2xl">
         <div className="panel-elevated p-5">
           {/* Tabs */}
           <div className="flex gap-1 rounded-xl border border-border bg-background/40 p-1">
@@ -639,6 +640,7 @@ export default function Pool() {
             )}
           </div>
         </div>
+        </TiltCard>
 
         <div className="mt-3 text-center text-[11px] text-muted-foreground num">
           Routed via <span className="font-semibold text-primary">LitDeX Router</span>
@@ -655,6 +657,16 @@ export default function Pool() {
           else if (pickerSide === "b") setTokenBAddr(addr);
           setPickerSide(null);
         }}
+      />
+
+      <TxResultModal
+        open={resultModal.open}
+        onClose={() => setResultModal((s) => ({ ...s, open: false }))}
+        kind={resultModal.kind}
+        title={resultModal.title}
+        subtitle={resultModal.subtitle}
+        txHash={resultModal.txHash}
+        details={resultModal.details}
       />
     </div>
   );
