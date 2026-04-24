@@ -46,6 +46,9 @@ import {
   getContractName,
   type FactoryForm,
 } from "@/lib/forgeTemplates";
+import { TiltCard } from "@/components/TiltCard";
+import { TxResultModal, type TxResultKind, type TxResultDetail } from "@/components/TxResultModal";
+import { pushWalletTx } from "@/hooks/useWalletHistory";
 
 type DeployStatus =
   | { kind: "idle" }
