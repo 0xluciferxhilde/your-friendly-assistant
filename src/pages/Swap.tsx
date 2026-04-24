@@ -176,7 +176,7 @@ function TokenPickerModal({
                 className="group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-primary/10"
               >
                 <div className="flex items-center gap-3">
-                  <TokenAvatar symbol={t.symbol} />
+                  <TokenAvatar symbol={t.symbol} address={t.address} />
                   <div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-semibold text-foreground">{t.symbol}</span>
