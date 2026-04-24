@@ -1,4 +1,4 @@
-import { ArrowLeftRight, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import { JsonRpcProvider } from "ethers";
 import { EXPLORER_URL, RPC_URL, shortAddr } from "@/lib/litvm";
