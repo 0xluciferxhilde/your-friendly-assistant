@@ -176,8 +176,31 @@
   from { opacity: 0; transform: scale(0.96); }
   to   { opacity: 1; transform: scale(1); }
 }
+@keyframes pop-in {
+  0%   { opacity: 0; transform: translateY(14px) scale(0.985); }
+  60%  { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
 .animate-fade-in  { animation: fade-in 0.35s ease-out; }
 .animate-scale-in { animation: scale-in 0.25s ease-out; }
+.animate-pop-in   { animation: pop-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Scroll-reveal — used with useScrollReveal hook */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.6s ease-out, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in, .animate-scale-in, .animate-pop-in { animation: none; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
 
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 8px; height: 8px; }

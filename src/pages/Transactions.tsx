@@ -1,4 +1,4 @@
-import { ArrowLeftRight, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import { JsonRpcProvider } from "ethers";
 import { EXPLORER_URL, RPC_URL, shortAddr } from "@/lib/litvm";
@@ -42,8 +42,8 @@ export default function Transactions() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="flex items-center gap-3 font-display text-4xl">
-          <ArrowLeftRight className="h-7 w-7 text-primary" /> Transactions
+        <h1 className="font-display text-4xl">
+          <span className="text-gradient-aurora">Transactions</span>
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">Latest transactions across recent blocks</p>
       </div>

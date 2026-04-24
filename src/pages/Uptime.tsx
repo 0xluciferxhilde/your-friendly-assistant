@@ -1,4 +1,4 @@
-import { Activity } from "lucide-react";
+// (Activity icon removed per design — heading uses gradient only)
 import { useEffect, useState } from "react";
 import { RPC_URL } from "@/lib/litvm";
 
@@ -34,8 +34,8 @@ export default function Uptime() {
 
   return (
     <div className="space-y-6">
-      <h1 className="flex items-center gap-3 font-display text-4xl">
-        <Activity className="h-7 w-7 text-primary" /> Uptime
+      <h1 className="font-display text-4xl">
+        <span className="text-gradient-aurora">Uptime</span>
       </h1>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

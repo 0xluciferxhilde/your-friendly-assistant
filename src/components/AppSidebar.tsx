@@ -81,22 +81,23 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="px-2 py-3">
+        {/* LitDeX (DeFi) — moved ABOVE Explorer per user request */}
         <SidebarGroup>
           <SidebarGroupLabel className="px-2 text-[10px] font-semibold tracking-[0.25em] text-muted-foreground/70">
-            Explorer
+            LitDeX
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {explorerItems.map((item) => {
+              {chainItems.map((item) => {
                 const isActive = location.pathname === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
                       isActive={isActive}
-                      className={`group relative h-10 rounded-xl transition-all data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:font-medium hover:bg-sidebar-accent`}
+                      className="group relative h-10 rounded-xl transition-all data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:font-medium hover:bg-sidebar-accent"
                     >
-                      <RouterNavLink to={item.url} end>
+                      <RouterNavLink to={item.url}>
                         {isActive && (
                           <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-gradient-violet shadow-glow-violet" />
                         )}
@@ -113,20 +114,20 @@ export function AppSidebar() {
 
         <SidebarGroup>
           <SidebarGroupLabel className="px-2 text-[10px] font-semibold tracking-[0.25em] text-muted-foreground/70">
-            DeFi
+            Explorer
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {chainItems.map((item) => {
+              {explorerItems.map((item) => {
                 const isActive = location.pathname === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
                       isActive={isActive}
-                      className="group relative h-10 rounded-xl transition-all data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:font-medium hover:bg-sidebar-accent"
+                      className={`group relative h-10 rounded-xl transition-all data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:font-medium hover:bg-sidebar-accent`}
                     >
-                      <RouterNavLink to={item.url}>
+                      <RouterNavLink to={item.url} end>
                         {isActive && (
                           <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-gradient-violet shadow-glow-violet" />
                         )}

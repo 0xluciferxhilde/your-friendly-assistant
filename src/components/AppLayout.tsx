@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Search, Bell } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -6,6 +6,7 @@ import { AppSidebar } from "./AppSidebar";
 import { AuroraBackground } from "./AuroraBackground";
 
 export function AppLayout() {
+  const location = useLocation();
   return (
     <SidebarProvider>
       <AuroraBackground />
@@ -38,7 +39,8 @@ export function AppLayout() {
           </header>
 
           <main className="flex-1 overflow-x-hidden p-4 md:p-8">
-            <div className="mx-auto max-w-7xl animate-fade-in">
+            {/* Re-mount on route change so the pop-in animation replays smoothly */}
+            <div key={location.pathname} className="mx-auto max-w-7xl animate-pop-in">
               <Outlet />
             </div>
           </main>

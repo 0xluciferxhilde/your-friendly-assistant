@@ -678,8 +678,8 @@ export default function Forge() {
           <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/5 px-4 py-1.5 text-xs uppercase tracking-[0.25em] text-teal-400">
             <Hammer className="h-3 w-3" /> Contract Forge · 1-Click Deploy
           </div>
-          <h1 className="mt-3 font-display text-5xl text-white">
-            Create & <span className="text-teal-400">Deploy</span>
+          <h1 className="mt-3 font-display text-5xl">
+            <span className="text-gradient-aurora">Create & Deploy</span>
           </h1>
           <p className="mt-1 text-sm text-white/40">
             Fill the form → deploy in one transaction · {feeEther} {LITVM_FACTORY_NATIVE_SYMBOL} fee · LitVM testnet

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDownUp, ChevronDown, ExternalLink, RefreshCw, Search, Settings2, SlidersHorizontal, Star, X } from "lucide-react";
+import { ArrowDownUp, ChevronDown, ExternalLink, RefreshCw, Search, SlidersHorizontal, Star, X } from "lucide-react";
 import { BrowserProvider, Contract, JsonRpcProvider, formatEther, formatUnits, parseUnits, isAddress } from "ethers";
 import { useAccount, useSwitchChain } from "wagmi";
 import {
@@ -19,6 +19,8 @@ import {
   shortAddr,
 } from "@/lib/litvm";
 import { resolveLogo, resolveSymbol } from "@/lib/tokenMeta";
+import { TiltCard } from "@/components/TiltCard";
+import { TxResultModal, type TxResultKind, type TxResultDetail } from "@/components/TxResultModal";
 
 // Some routers expose WZKLTC(), others WETH(). Try both, fallback to constant.
 const ROUTER_WRAPPED_ABI = [
@@ -124,9 +126,10 @@ function TokenPickerModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-background/70 p-4 pt-[10vh] backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-background/70 p-4 pt-[10vh] backdrop-blur-md animate-fade-in" onClick={onClose}>
+      <TiltCard tiltLimit={5} scale={1.01} className="w-full max-w-md animate-scale-in">
       <div
-        className="w-full max-w-md panel-elevated p-5 animate-scale-in"
+        className="w-full panel-elevated p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -210,6 +213,7 @@ function TokenPickerModal({
           )}
         </div>
       </div>
+      </TiltCard>
     </div>
   );
 }
@@ -280,6 +284,11 @@ export default function Swap() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [tokenBalances, setTokenBalances] = useState<Record<string, string>>({});
   const quoteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Result modal (final OK / error)
+  const [resultModal, setResultModal] = useState<{
+    open: boolean; kind: TxResultKind; title: string; subtitle?: string; txHash?: string; details?: TxResultDetail[];
+  }>({ open: false, kind: "ok", title: "" });
 
   // Load wrapped native address from router (try WZKLTC then WETH, fallback to constant)
   useEffect(() => {
@@ -460,10 +469,18 @@ export default function Swap() {
       setStatus({ kind: "info", msg: "Confirming… " + tx.hash.slice(0, 12) + "…", txHash: tx.hash });
       const receipt = await tx.wait();
       const finalHash = receipt?.hash ?? tx.hash;
-      setStatus({
+      setStatus({ kind: "idle", msg: "" });
+      setResultModal({
+        open: true,
         kind: "ok",
-        msg: `Swap confirmed! tx ${shortAddr(finalHash)}`,
+        title: "Swap Confirmed",
+        subtitle: "Your swap has been settled on LitVM.",
         txHash: finalHash,
+        details: [
+          { label: "Sent", value: `${(+amountIn).toLocaleString(undefined, { maximumFractionDigits: 6 })} ${tokenIn.symbol}` },
+          { label: "Received", value: `${(+amountOut).toLocaleString(undefined, { maximumFractionDigits: 6 })} ${tokenOut.symbol}` },
+          { label: "Router", value: routerKey === "omnifun" ? "OmniFun Router" : "LitDeX Router" },
+        ],
       });
       setAmountIn(""); setAmountOut("");
       const [m1, m2] = await Promise.all([
@@ -473,7 +490,13 @@ export default function Swap() {
       setTokenIn(m1); setTokenOut(m2);
       reloadAllowance();
     } catch (e) {
-      setStatus({ kind: "error", msg: "Swap failed: " + errMsg(e).slice(0, 160) });
+      setStatus({ kind: "idle", msg: "" });
+      setResultModal({
+        open: true,
+        kind: "error",
+        title: "Swap Failed",
+        subtitle: errMsg(e).slice(0, 200),
+      });
     } finally {
       setBusy(false);
     }
@@ -562,14 +585,16 @@ export default function Swap() {
           <span className="text-gradient-aurora">Swap Your Assets</span>
         </h1>
         <p className="mt-2 max-w-md text-sm text-muted-foreground">
-          Trade tokens instantly across LiteSwap V2 & OmniFun routers on LitVM testnet.
+          Trade tokens instantly across LitDeX & OmniFun routers on LitVM testnet.
         </p>
       </div>
 
       <div className="w-full max-w-[440px]">
 
-        {/* ── Swap Card ── */}
+        {/* ── Swap Card (with 3D tilt) ── */}
+        <TiltCard tiltLimit={6} scale={1.015} className="rounded-2xl">
         <div className="rounded-2xl border border-white/[0.07] bg-[#0d1117] shadow-2xl">
+
 
           {/* ── Top bar: Title + Icons ── */}
           <div className="flex items-center justify-between px-4 pt-4 pb-3">
@@ -720,8 +745,9 @@ export default function Swap() {
             <div className="pt-1">{action}</div>
           </div>
         </div>
+        </TiltCard>
 
-        {/* ── Footer ── */}
+        {/* ── Footer (router-aware label) ── */}
         <div className="mt-3 text-center text-[11px] text-white/30">
           Routed via{" "}
           <a
@@ -732,7 +758,7 @@ export default function Swap() {
           >
             {shortAddr(routerAddr)}
           </a>{" "}
-          · LiteSwap V2 Router
+          · {routerKey === "omnifun" ? "OmniFun Router" : "LitDeX Router"}
         </div>
       </div>
 
@@ -746,6 +772,17 @@ export default function Swap() {
           setPickerSide(null);
         }}
         tokenBalances={tokenBalances}
+      />
+
+      {/* ── Final result modal (themed pop-up) ── */}
+      <TxResultModal
+        open={resultModal.open}
+        onClose={() => setResultModal((s) => ({ ...s, open: false }))}
+        kind={resultModal.kind}
+        title={resultModal.title}
+        subtitle={resultModal.subtitle}
+        txHash={resultModal.txHash}
+        details={resultModal.details}
       />
     </div>
   );

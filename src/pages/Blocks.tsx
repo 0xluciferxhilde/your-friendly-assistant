@@ -1,4 +1,4 @@
-import { Boxes, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { useLitvmNetwork } from "@/hooks/useLitvmNetwork";
 import { EXPLORER_URL } from "@/lib/litvm";
 
@@ -9,8 +9,8 @@ export default function Blocks() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="flex items-center gap-3 font-display text-4xl">
-          <Boxes className="h-7 w-7 text-primary" /> Blocks
+        <h1 className="font-display text-4xl">
+          <span className="text-gradient-aurora">Blocks</span>
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Latest blocks on LitVM LiteForge {latestBlock && <>· #{latestBlock.toLocaleString()}</>}

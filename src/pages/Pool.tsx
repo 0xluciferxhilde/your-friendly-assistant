@@ -392,7 +392,7 @@ export default function Pool() {
           <span className="text-gradient-aurora">Pools</span>
         </h1>
         <p className="mt-2 max-w-md text-sm text-muted-foreground">
-          Provide liquidity to LiteSwap V2 pairs and earn LP tokens · Powered by your own factory & router.
+          Provide liquidity to LitDeX V2 pairs and earn LP tokens · Powered by your own factory & router.
         </p>
       </div>
 
@@ -589,7 +589,7 @@ export default function Pool() {
         </div>
 
         <div className="mt-3 text-center text-[11px] text-muted-foreground num">
-          Routed via <span className="font-semibold text-primary">LiteSwap V2</span>
+          Routed via <span className="font-semibold text-primary">LitDeX Router</span>
           {" · "}Factory <a href={`${EXPLORER_URL}/address/${DEFAULT_FACTORY}`} target="_blank" rel="noreferrer" className="text-primary hover:underline">{shortAddr(DEFAULT_FACTORY)}</a>
           {" · "}Router <a href={`${EXPLORER_URL}/address/${DEFAULT_ROUTER}`} target="_blank" rel="noreferrer" className="text-primary hover:underline">{shortAddr(DEFAULT_ROUTER)}</a>
         </div>

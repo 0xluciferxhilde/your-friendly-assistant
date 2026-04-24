@@ -122,8 +122,8 @@ export default function Terminal() {
 
   return (
     <div className="space-y-6">
-      <h1 className="flex items-center gap-3 font-display text-4xl">
-        <Zap className="h-7 w-7 text-fire" /> LitVM Terminal
+      <h1 className="font-display text-4xl">
+        <span className="text-gradient-aurora">LitVM Terminal</span>
       </h1>
 
       <div className="panel flex h-[70vh] flex-col">
