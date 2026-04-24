@@ -753,6 +753,7 @@ export default function Forge() {
       </div>
 
       {/* ── Main form card ── */}
+      <TiltCard tiltLimit={5} scale={1.01} className="rounded-2xl">
       <div className="rounded-2xl border border-white/[0.07] bg-[#0d1117] p-6 md:p-8">
 
         {/* Tab header */}
@@ -809,6 +810,7 @@ export default function Forge() {
           </button>
         </div>
       </div>
+      </TiltCard>
 
       {/* ── Source preview ── */}
       {code && (
