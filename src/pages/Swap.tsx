@@ -721,7 +721,7 @@ export default function Swap() {
           </div>
         </div>
 
-        {/* ── Footer ── */}
+        {/* ── Footer (router-aware label) ── */}
         <div className="mt-3 text-center text-[11px] text-white/30">
           Routed via{" "}
           <a
@@ -732,7 +732,7 @@ export default function Swap() {
           >
             {shortAddr(routerAddr)}
           </a>{" "}
-          · LiteSwap V2 Router
+          · {routerKey === "omnifun" ? "OmniFun Router" : "LitDeX Router"}
         </div>
       </div>
 
