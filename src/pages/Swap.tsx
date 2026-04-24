@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDownUp, ChevronDown, ExternalLink, RefreshCw, Search, Settings2, SlidersHorizontal, Star, X } from "lucide-react";
+import { ArrowDownUp, ChevronDown, ExternalLink, RefreshCw, Search, SlidersHorizontal, Star, X } from "lucide-react";
 import { BrowserProvider, Contract, JsonRpcProvider, formatEther, formatUnits, parseUnits, isAddress } from "ethers";
 import { useAccount, useSwitchChain } from "wagmi";
 import {
@@ -19,6 +19,8 @@ import {
   shortAddr,
 } from "@/lib/litvm";
 import { resolveLogo, resolveSymbol } from "@/lib/tokenMeta";
+import { TiltCard } from "@/components/TiltCard";
+import { TxResultModal, type TxResultKind, type TxResultDetail } from "@/components/TxResultModal";
 
 // Some routers expose WZKLTC(), others WETH(). Try both, fallback to constant.
 const ROUTER_WRAPPED_ABI = [
