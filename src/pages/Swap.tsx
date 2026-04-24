@@ -483,6 +483,14 @@ export default function Swap() {
           { label: "Router", value: routerKey === "omnifun" ? "OmniFun Router" : "LitDeX Router" },
         ],
       });
+      pushWalletTx({
+        hash: finalHash,
+        kind: "swap",
+        title: `Swapped ${tokenIn.symbol} → ${tokenOut.symbol}`,
+        subtitle: `${(+amountIn).toFixed(4)} ${tokenIn.symbol} → ${(+amountOut).toFixed(4)} ${tokenOut.symbol} · ${routerKey === "omnifun" ? "OmniFun" : "LitDeX"} Router`,
+        time: Date.now(),
+        account: walletAddr,
+      });
       setAmountIn(""); setAmountOut("");
       const [m1, m2] = await Promise.all([
         loadTokenMeta(tokenInAddr, walletAddr),
