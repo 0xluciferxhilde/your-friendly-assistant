@@ -3,17 +3,18 @@ import { ArrowDownUp, ChevronDown, ExternalLink, RefreshCw, Search, Settings2, S
 import { BrowserProvider, Contract, JsonRpcProvider, formatEther, formatUnits, parseUnits, isAddress } from "ethers";
 import { useAccount, useSwitchChain } from "wagmi";
 import {
-  DEFAULT_ROUTER,
   ERC20_ABI,
   EXPLORER_URL,
   LITVM_CHAIN_ID,
   NATIVE_SENTINEL,
   POPULAR_TOKENS,
   ROUTER_ABI,
+  ROUTERS,
   RPC_URL,
   SWAP_TOKENS,
   errMsg,
   isNativeAddr,
+  pickRouter,
   shortAddr,
 } from "@/lib/litvm";
 
@@ -228,7 +229,9 @@ export default function Swap() {
   const { address: walletAddr, isConnected, chainId } = useAccount();
   const { switchChainAsync } = useSwitchChain();
 
-  const [routerAddr] = useState(DEFAULT_ROUTER);
+  const routerKey = useMemo(() => pickRouter(tokenInAddr, tokenOutAddr), [tokenInAddr, tokenOutAddr]);
+  const routerAddr = ROUTERS[routerKey].address;
+  const routerLabel = ROUTERS[routerKey].label;
   const [wethAddr, setWethAddr] = useState<string>("");
   const [tokenInAddr, setTokenInAddr] = useState<string>(NATIVE_SENTINEL);
   const [tokenOutAddr, setTokenOutAddr] = useState<string>(POPULAR_TOKENS[0].address);
