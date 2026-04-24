@@ -174,6 +174,11 @@ export default function Pool() {
   const [allowanceA, setAllowanceA] = useState<bigint>(0n);
   const [allowanceB, setAllowanceB] = useState<bigint>(0n);
 
+  // Final result modal (themed pop-up)
+  const [resultModal, setResultModal] = useState<{
+    open: boolean; kind: TxResultKind; title: string; subtitle?: string; txHash?: string; details?: TxResultDetail[];
+  }>({ open: false, kind: "ok", title: "" });
+
   const ensureChain = useCallback(async () => {
     if (chainId !== LITVM_CHAIN_ID) await switchChainAsync({ chainId: LITVM_CHAIN_ID });
   }, [chainId, switchChainAsync]);
@@ -308,13 +313,34 @@ export default function Pool() {
       setStatus({ kind: "info", msg: "Confirming…", txHash: tx.hash });
       const receipt = await tx.wait();
       const finalHash = receipt?.hash ?? tx.hash;
-      setStatus({ kind: "ok", msg: `Liquidity added! tx ${shortAddr(finalHash)}`, txHash: finalHash });
+      setStatus({ kind: "idle", msg: "" });
+      setResultModal({
+        open: true,
+        kind: "ok",
+        title: "Liquidity Added",
+        subtitle: "Your liquidity position is live on LitDeX.",
+        txHash: finalHash,
+        details: [
+          { label: tokenA?.symbol || "Token A", value: `${(+amountA).toLocaleString(undefined, { maximumFractionDigits: 6 })} ${tokenA?.symbol || ""}` },
+          { label: tokenB?.symbol || "Token B", value: `${(+amountB).toLocaleString(undefined, { maximumFractionDigits: 6 })} ${tokenB?.symbol || ""}` },
+          { label: "Router", value: "LitDeX Router" },
+        ],
+      });
+      pushWalletTx({
+        hash: finalHash,
+        kind: "liquidity",
+        title: `Add ${tokenA?.symbol || "?"} + ${tokenB?.symbol || "?"}`,
+        subtitle: `${(+amountA).toFixed(4)} ${tokenA?.symbol || ""} & ${(+amountB).toFixed(4)} ${tokenB?.symbol || ""}`,
+        time: Date.now(),
+        account: walletAddr,
+      });
       setAmountA(""); setAmountB("");
       reloadPair();
       const [m1, m2] = await Promise.all([loadTokenMeta(tokenAAddr, walletAddr), loadTokenMeta(tokenBAddr, walletAddr)]);
       setTokenA(m1); setTokenB(m2);
     } catch (e) {
-      setStatus({ kind: "error", msg: "Add failed: " + errMsg(e).slice(0, 160) });
+      setStatus({ kind: "idle", msg: "" });
+      setResultModal({ open: true, kind: "error", title: "Add Liquidity Failed", subtitle: errMsg(e).slice(0, 200) });
     } finally { setBusy(false); }
   };
 
