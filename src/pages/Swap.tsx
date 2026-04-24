@@ -345,7 +345,7 @@ export default function Swap() {
       return;
     }
     try {
-      const router = new Contract(routerAddr, ROUTER_ABI, readProvider);
+      const router = new Contract(routerAddr, ROUTER_SWAP_ABI, readProvider);
       const inWei = parseUnits(amountIn, tokenIn.decimals);
       const amounts = (await router.getAmountsOut(inWei, [inA, outA])) as bigint[];
       setAmountOut(formatUnits(amounts[amounts.length - 1], tokenOut.decimals));
