@@ -285,6 +285,11 @@ export default function Swap() {
   const [tokenBalances, setTokenBalances] = useState<Record<string, string>>({});
   const quoteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Result modal (final OK / error)
+  const [resultModal, setResultModal] = useState<{
+    open: boolean; kind: TxResultKind; title: string; subtitle?: string; txHash?: string; details?: TxResultDetail[];
+  }>({ open: false, kind: "ok", title: "" });
+
   // Load wrapped native address from router (try WZKLTC then WETH, fallback to constant)
   useEffect(() => {
     let cancel = false;
