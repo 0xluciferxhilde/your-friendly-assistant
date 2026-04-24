@@ -102,11 +102,11 @@ function LivePreview({ form }: { form: FormState }) {
       </div>
 
       <div className="mt-6 flex flex-col items-center text-center">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-teal-400 to-teal-600 text-3xl font-bold text-white shadow-[0_0_24px_-4px_rgba(45,212,191,0.6)]">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full text-3xl font-bold text-white" style={{background: "linear-gradient(135deg, #2dd4bf, #0d9488)", boxShadow: "0 0 24px -4px rgba(45,212,191,0.6)"}}>
           {initial}
         </div>
         <div className="mt-3 font-display text-2xl text-white">{form.name || "Token Name"}</div>
-        <div className="text-sm font-medium text-teal-400">{form.symbol || "SYMBOL"}</div>
+        <div className="text-sm font-medium text-[#2dd4bf]">{form.symbol || "SYMBOL"}</div>
       </div>
 
       <div className="mt-6 space-y-3 border-t border-white/[0.07] pt-4 text-sm">
@@ -751,7 +751,7 @@ function TokenCard({
   return (
     <div className="rounded-2xl border border-white/[0.07] bg-[#0d1117] p-4 transition-all hover:border-blue-500/30">
       <div className="flex items-start gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-teal-600 text-lg font-bold text-white shadow-[0_0_16px_-4px_rgba(45,212,191,0.5)]">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-lg font-bold text-white" style={{background: "linear-gradient(135deg, #2dd4bf, #0d9488)", boxShadow: "0 0 16px -4px rgba(45,212,191,0.5)"}}>
           {initial}
         </div>
         <div className="min-w-0 flex-1">
