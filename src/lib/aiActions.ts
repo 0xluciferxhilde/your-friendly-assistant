@@ -243,7 +243,7 @@ export async function executeAddLiquidity(opts: {
 
   pushWalletTx({
     hash,
-    kind: "pool",
+    kind: "liquidity",
     title: `Added Liquidity ${a.symbol}/${b.symbol}`,
     subtitle: `${(+opts.amountA).toFixed(4)} ${a.symbol} + ${(+opts.amountB).toFixed(4)} ${b.symbol}`,
     time: Date.now(),
