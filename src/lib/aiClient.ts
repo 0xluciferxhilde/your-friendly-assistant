@@ -26,12 +26,15 @@ export async function getAiCredits(wallet: string): Promise<AiCredits> {
 export async function postAiChat(
   wallet: string,
   message: string,
-  context?: unknown
+  context?: unknown,
+  system?: string
 ): Promise<AiChatResponse> {
-  // The backend ignores unknown fields; we attach `context` so future
-  // prompts can leverage on-chain data without a contract change.
+  // The backend ignores unknown fields; we attach `context` and `system`
+  // so future prompts can leverage on-chain data + LitVM-only guardrails
+  // without requiring a contract change on the API side.
   const body: Record<string, unknown> = { wallet, message };
   if (context) body.context = context;
+  if (system) body.system = system;
   const res = await fetch(`${BASE}/ai/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

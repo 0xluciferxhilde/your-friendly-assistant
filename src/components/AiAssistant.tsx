@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useAccount } from "wagmi";
-import { Bot, Sparkles, Send, X, Loader2, Wallet } from "lucide-react";
+import { Bot, Sparkles, Send, X, Loader2, Wallet, Zap, ZapOff } from "lucide-react";
 import { TiltCard } from "./TiltCard";
+import { AiActionCard, TxResultBubble } from "./AiActionCard";
 import { getAiCredits, postAiChat, type AiCredits } from "@/lib/aiClient";
 import { buildOnchainContext } from "@/lib/aiContext";
+import { buildSystemPrompt } from "@/lib/aiSystemPrompt";
+import { parseIntent, type Intent } from "@/lib/aiIntent";
+import type { TxResult } from "@/lib/aiActions";
 import { shortAddr } from "@/lib/litvm";
 import { cn } from "@/lib/utils";
 
@@ -12,22 +16,31 @@ type Msg = {
   role: "user" | "assistant" | "system";
   content: string;
   pending?: boolean;
+  intent?: Intent;        // inline action card
+  result?: TxResult;      // tx result bubble
 };
 
 const SUGGESTIONS = [
   "Swap 10 zkLTC to USDC",
-  "What is the price of USDC?",
-  "Network stats",
-  "Most used DEX on LitVM",
+  "Add liquidity zkLTC/USDC",
+  "Deploy token name Sachin with 1000000 supply",
+  "Most used dapp on LitVM",
 ];
+
+const AUTO_KEY = "litdex.ai.auto";
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
 /**
- * Floating LitDeX AI assistant — bottom-right launcher + slide-in chat panel.
- * Uses TiltCard for the open panel (lightweight tilt on touch devices too).
+ * Floating LitDeX AI assistant.
+ *
+ * Key powers:
+ *  - LitVM-only system prompt (no Uniswap/Pancake mentions)
+ *  - Local intent parser pops up an inline action card for swap / pool / deploy
+ *  - User can toggle "auto-execute" mode (saved in localStorage)
+ *  - Real on-chain execution via src/lib/aiActions.ts
  */
 export function AiAssistant() {
   const { address, isConnected } = useAccount();
@@ -35,15 +48,25 @@ export function AiAssistant() {
   const [credits, setCredits] = useState<AiCredits | null>(null);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [autoMode, setAutoMode] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(AUTO_KEY) === "1";
+  });
   const [messages, setMessages] = useState<Msg[]>([
     {
       id: "welcome",
       role: "assistant",
       content:
-        "Hey 👋 I'm **LitDeX AI**. Ask me to quote a swap, look up a wallet/contract, or check network stats. I can read live on-chain data from LiteForge.",
+        "Hey 👋 I'm **LitDeX AI**. Bolo: *swap 10 zkLTC to USDC*, *add liquidity zkLTC/USDC*, ya *deploy token Sachin with 1000000 supply* — main form khud bhar dunga aur tum confirm kar do.",
     },
   ]);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(AUTO_KEY, autoMode ? "1" : "0");
+    }
+  }, [autoMode]);
 
   // Refresh credits whenever the panel opens or the wallet changes.
   useEffect(() => {
@@ -61,25 +84,47 @@ export function AiAssistant() {
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages, busy]);
 
+  function pushAssistant(content: string, extras: Partial<Msg> = {}) {
+    setMessages((m) => [...m, { id: uid(), role: "assistant", content, ...extras }]);
+  }
+
   async function send(text: string) {
     const msg = text.trim();
     if (!msg || busy) return;
     if (!address) return;
 
     const userMsg: Msg = { id: uid(), role: "user", content: msg };
+    setMessages((m) => [...m, userMsg]);
+    setInput("");
+
+    // ── Local intent detection FIRST ──────────────────────────────────────
+    const intent = parseIntent(msg);
+    if (intent) {
+      const label =
+        intent.kind === "swap" ? "Swap form" :
+        intent.kind === "pool" ? "Liquidity form" :
+        intent.kind === "deploy-token" ? "Token deploy form" :
+        `${intent.contractType} deploy form`;
+      pushAssistant(`Opening ${label} — fill ya confirm karke execute karo.`, { intent });
+      // Don't call backend for action intents — saves credits + avoids generic tutorials
+      return;
+    }
+
+    // ── Otherwise, AI Q&A ─────────────────────────────────────────────────
     const pendingId = uid();
     setMessages((m) => [
       ...m,
-      userMsg,
       { id: pendingId, role: "assistant", content: "", pending: true },
     ]);
-    setInput("");
     setBusy(true);
 
     try {
-      // Enrich with on-chain context if the message mentions any 0x address.
       const context = await buildOnchainContext(msg).catch(() => null);
-      const res = await postAiChat(address, msg, context ?? undefined);
+      const sys = buildSystemPrompt({
+        gasGwei: (context as { network?: { gasPriceGwei?: string } } | null)?.network?.gasPriceGwei,
+        latestBlock: (context as { network?: { latestBlock?: number } } | null)?.network?.latestBlock,
+      });
+      const res = await postAiChat(address, msg, context ?? undefined, sys);
       setMessages((m) =>
         m.map((x) =>
           x.id === pendingId
@@ -94,8 +139,6 @@ export function AiAssistant() {
       });
     } catch (e) {
       const raw = e instanceof Error ? e.message : String(e);
-      // Friendlier copy for the most common failure mode (backend not deployed
-      // yet / route missing / cold start). Everything else falls through.
       const friendly = /\b404\b|Not Found/i.test(raw)
         ? "AI backend reachable nahi hai abhi. Page reload karo ya thodi der baad try karo."
         : /\bFailed to fetch\b|NetworkError/i.test(raw)
@@ -138,9 +181,9 @@ export function AiAssistant() {
 
       {/* Panel */}
       {open && (
-        <div className="fixed bottom-24 right-4 z-50 w-[min(92vw,400px)] animate-scale-in">
+        <div className="fixed bottom-24 right-4 z-50 w-[min(92vw,420px)] animate-scale-in">
           <TiltCard tiltLimit={5} scale={1.005} className="rounded-2xl">
-            <div className="panel-elevated flex h-[600px] max-h-[80vh] flex-col overflow-hidden">
+            <div className="panel-elevated flex h-[640px] max-h-[85vh] flex-col overflow-hidden">
               {/* Header */}
               <div className="flex items-center gap-3 border-b border-border/60 px-4 py-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-primary/40 bg-primary/10 text-primary">
@@ -154,9 +197,22 @@ export function AiAssistant() {
                     {address ? shortAddr(address) : "Wallet not connected"}
                   </div>
                 </div>
+                <button
+                  onClick={() => setAutoMode((v) => !v)}
+                  title={autoMode ? "Auto-execute: ON" : "Auto-execute: OFF (confirm each tx)"}
+                  className={cn(
+                    "flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold transition-colors",
+                    autoMode
+                      ? "border-amber-400/60 bg-amber-400/15 text-amber-300"
+                      : "border-border bg-background/60 text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {autoMode ? <Zap className="h-3 w-3" /> : <ZapOff className="h-3 w-3" />}
+                  {autoMode ? "Auto" : "Confirm"}
+                </button>
                 {credits && (
                   <span className="rounded-full border border-primary/40 bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary">
-                    {credits.free_remaining} free · {credits.paid_credits} paid
+                    {credits.free_remaining}·{credits.paid_credits}
                   </span>
                 )}
               </div>
@@ -167,7 +223,25 @@ export function AiAssistant() {
                 className="flex-1 space-y-3 overflow-y-auto px-4 py-3"
               >
                 {messages.map((m) => (
-                  <MessageBubble key={m.id} msg={m} />
+                  <MessageBubble
+                    key={m.id}
+                    msg={m}
+                    walletAddr={address}
+                    autoMode={autoMode}
+                    onActionResult={(r) => {
+                      // append a result bubble + clear the intent so the form goes away
+                      setMessages((all) =>
+                        all.map((x) => (x.id === m.id ? { ...x, intent: undefined } : x))
+                          .concat({ id: uid(), role: "assistant", content: "", result: r })
+                      );
+                    }}
+                    onActionError={(err) => pushAssistant(`⚠️ ${err}`)}
+                    onActionClose={() => {
+                      setMessages((all) =>
+                        all.map((x) => (x.id === m.id ? { ...x, intent: undefined } : x))
+                      );
+                    }}
+                  />
                 ))}
                 {busy && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -219,16 +293,14 @@ export function AiAssistant() {
                   placeholder={
                     !isConnected
                       ? "Connect wallet…"
-                      : noCredits
-                        ? "Buy credits to continue"
-                        : "Ask LitDeX AI…"
+                      : "Swap / Pool / Deploy / Ask…"
                   }
-                  disabled={!isConnected || noCredits || busy}
+                  disabled={!isConnected || busy}
                   className="flex-1 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/60 focus:outline-none"
                 />
                 <button
                   type="submit"
-                  disabled={!isConnected || noCredits || busy || !input.trim()}
+                  disabled={!isConnected || busy || !input.trim()}
                   className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/60 bg-primary/20 text-primary transition-colors hover:bg-primary/30 disabled:opacity-40"
                   aria-label="Send"
                 >
@@ -247,7 +319,21 @@ export function AiAssistant() {
   );
 }
 
-function MessageBubble({ msg }: { msg: Msg }) {
+function MessageBubble({
+  msg,
+  walletAddr,
+  autoMode,
+  onActionResult,
+  onActionError,
+  onActionClose,
+}: {
+  msg: Msg;
+  walletAddr?: string;
+  autoMode: boolean;
+  onActionResult: (r: TxResult) => void;
+  onActionError: (err: string) => void;
+  onActionClose: () => void;
+}) {
   if (msg.role === "user") {
     return (
       <div className="flex justify-end">
@@ -262,16 +348,31 @@ function MessageBubble({ msg }: { msg: Msg }) {
       <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-primary/40 bg-primary/10 text-primary">
         <Bot className="h-3.5 w-3.5" />
       </div>
-      <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-tl-sm border border-border bg-surface px-3 py-2 text-sm text-foreground/90">
+      <div className="max-w-[88%] flex-1 space-y-2">
         {msg.pending ? (
-          <span className="inline-flex gap-1">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary [animation-delay:120ms]" />
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary [animation-delay:240ms]" />
-          </span>
-        ) : (
-          <RichText text={msg.content} />
+          <div className="rounded-2xl rounded-tl-sm border border-border bg-surface px-3 py-2">
+            <span className="inline-flex gap-1">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary [animation-delay:120ms]" />
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary [animation-delay:240ms]" />
+            </span>
+          </div>
+        ) : msg.content ? (
+          <div className="whitespace-pre-wrap rounded-2xl rounded-tl-sm border border-border bg-surface px-3 py-2 text-sm text-foreground/90">
+            <RichText text={msg.content} />
+          </div>
+        ) : null}
+        {msg.intent && (
+          <AiActionCard
+            intent={msg.intent}
+            walletAddr={walletAddr}
+            autoMode={autoMode}
+            onClose={onActionClose}
+            onResult={onActionResult}
+            onError={onActionError}
+          />
         )}
+        {msg.result && <TxResultBubble result={msg.result} />}
       </div>
     </div>
   );
