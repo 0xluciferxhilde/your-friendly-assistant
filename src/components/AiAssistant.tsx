@@ -93,12 +93,18 @@ export function AiAssistant() {
         can_chat: res.free_remaining + res.paid_credits > 0,
       });
     } catch (e) {
-      const errText =
-        e instanceof Error ? e.message : "Something went wrong. Try again.";
+      const raw = e instanceof Error ? e.message : String(e);
+      // Friendlier copy for the most common failure mode (backend not deployed
+      // yet / route missing / cold start). Everything else falls through.
+      const friendly = /\b404\b|Not Found/i.test(raw)
+        ? "AI backend reachable nahi hai abhi. Page reload karo ya thodi der baad try karo."
+        : /\bFailed to fetch\b|NetworkError/i.test(raw)
+          ? "Network gir gaya — internet check karke retry karo."
+          : raw;
       setMessages((m) =>
         m.map((x) =>
           x.id === pendingId
-            ? { ...x, pending: false, content: `⚠️ ${errText}` }
+            ? { ...x, pending: false, content: `⚠️ ${friendly}` }
             : x
         )
       );
