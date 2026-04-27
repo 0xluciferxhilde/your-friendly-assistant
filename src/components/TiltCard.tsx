@@ -41,15 +41,17 @@ export function TiltCard({
   const [spotlightPos, setSpotlightPos] = useState({ x: 50, y: 50 });
   const [isHovered, setIsHovered] = useState(false);
   const [enabled, setEnabled] = useState(true);
+  const [isTouch, setIsTouch] = useState(false);
+  const rafRef = useRef<number | null>(null);
 
-  // Disable on touch / small viewports / reduced-motion preference.
+  // Honour reduced-motion only — keep tilt on mobile but lighter.
   useEffect(() => {
     const check = () => {
       if (typeof window === "undefined") return;
-      const small = window.matchMedia("(max-width: 768px)").matches;
-      const coarse = window.matchMedia("(pointer: coarse)").matches;
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      setEnabled(!(small || coarse || reduce));
+      const coarse = window.matchMedia("(pointer: coarse)").matches;
+      setEnabled(!reduce);
+      setIsTouch(coarse);
     };
     check();
     window.addEventListener("resize", check);
@@ -57,23 +59,31 @@ export function TiltCard({
   }, []);
 
   const dir = effect === "evade" ? -1 : 1;
+  // Lighter tilt on touch to avoid jitter / battery cost.
+  const effectiveLimit = isTouch ? Math.min(tiltLimit, 4) : tiltLimit;
+  const effectiveScale = isTouch ? Math.min(scale, 1.01) : scale;
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
       if (!enabled) return;
       const el = cardRef.current;
       if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const px = (e.clientX - rect.left) / rect.width;
-      const py = (e.clientY - rect.top) / rect.height;
-      const xRot = (py - 0.5) * (tiltLimit * 2) * dir;
-      const yRot = (px - 0.5) * -(tiltLimit * 2) * dir;
-      setTransform(
-        `perspective(${perspective}px) rotateX(${xRot}deg) rotateY(${yRot}deg) scale3d(${scale}, ${scale}, ${scale})`
-      );
-      if (spotlight) setSpotlightPos({ x: px * 100, y: py * 100 });
+      const clientX = e.clientX;
+      const clientY = e.clientY;
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(() => {
+        const rect = el.getBoundingClientRect();
+        const px = (clientX - rect.left) / rect.width;
+        const py = (clientY - rect.top) / rect.height;
+        const xRot = (py - 0.5) * (effectiveLimit * 2) * dir;
+        const yRot = (px - 0.5) * -(effectiveLimit * 2) * dir;
+        setTransform(
+          `perspective(${perspective}px) rotateX(${xRot}deg) rotateY(${yRot}deg) scale3d(${effectiveScale}, ${effectiveScale}, ${effectiveScale})`
+        );
+        if (spotlight) setSpotlightPos({ x: px * 100, y: py * 100 });
+      });
     },
-    [enabled, tiltLimit, scale, perspective, dir, spotlight]
+    [enabled, effectiveLimit, effectiveScale, perspective, dir, spotlight]
   );
 
   const handlePointerEnter = useCallback(() => {
