@@ -5,6 +5,7 @@ import { AppSidebar } from "./AppSidebar";
 import { AuroraBackground } from "./AuroraBackground";
 import { GlobalSearch } from "./GlobalSearch";
 import { NotificationsButton } from "./NotificationsButton";
+import { AiAssistant } from "./AiAssistant";
 
 export function AppLayout() {
   const location = useLocation();
@@ -40,6 +41,7 @@ export function AppLayout() {
           </main>
         </div>
       </div>
+      <AiAssistant />
     </SidebarProvider>
   );
 }
